@@ -1,32 +1,15 @@
 #!/usr/bin/env python
 import rospy
 import numpy as np
-from std_msgs.msg import Bool
-from closedloop_control.msg import path
+from openloop_control.msg import path
 
 #Variables
-goal = path() #Create a variable for the custom message
-
-#Initialize the goal values
-goal.currGoal.x = 0.0
-goal.currGoal.y = 0.0
-
-#Initialize the velocities and flag
-goal.linear = 0.0
-goal.angular = 0.0
-
-position = [0, 0]
-point = 0 #For iterate along the points received
+msg = path()
 
 #Stop Condition
 def stop():
     #Stop message
     print("Stopping")
-
-#For getting the flag to change the current and next goals
-def callback(msg):
-    global next
-    next = msg.data
 
 if __name__=='__main__':
     #Initialise and Setup node
@@ -37,51 +20,54 @@ if __name__=='__main__':
     rate = rospy.Rate(hz)
 
     #Publishers and subscribers
-    path_pub = rospy.Publisher("/goal", path, queue_size = 1)
-    rospy.Subscriber("/nextGoal", Bool, callback)
+    path_pub = rospy.Publisher("/pose", path, queue_size=1)
 
     print("The Path Generator is Running")
     #Run the node
     while not rospy.is_shutdown():
-	    #Get parameters from the parameter file
-        points = rospy.get_param("/points")
+        #Prepare variables for publish the custom message
+        msg.distances = []
+        msg.angles = []
+        msg.linear = rospy.get_param("/linear")
+        msg.angular = rospy.get_param("/angular")
+	
+	#Get parameters from the parameter file
         isTime = rospy.get_param("/isTime")
         time = rospy.get_param("/time")
-        Vlinear = rospy.get_param("/linear")
-        Vangular = rospy.get_param("/angular")
-        
-        if next:
-            point += 1
-            next = False
+        points = rospy.get_param("/points")
 
-        if (point < len(points)):
-            goal.currGoal.x = points[point][0]
-            goal.currGoal.y = points[point][1]
-        else:
-            goal.currGoal.x = 0.0
-            goal.currGoal.y = 0.0
-
-        goal.linear = Vlinear[point]
-        goal.angular = Vangular[point]
-
-        if isTime: #If the user introduce time instead of velocities
-            xd, yd = goal.currGoal.x, goal.currGoal.y #Coordinates desired
+	#Initialize variables for the distance and angle calculations
+        position = [0, 0]
+        point = 0
+        while point < 4: #Calculate for the 4 points
+            xd, yd = points[point][0], points[point][1] #Coordinates desired
             x, y = position[0], position[1] #Current coordinates
+
             dist = np.sqrt((x-xd)**2 + (y-yd)**2) #Distance desired
+            angle = np.arctan2((yd-y), (xd-x)) #Angle desired
+            if (angle > np.pi): #Get the smaller angle required
+                angle -= -2*np.pi
+            elif (angle < -np.pi):
+                angle += 2*np.pi
+	    
+            msg.distances.append(dist)
+            msg.angles.append(angle)
 
-            goal.linear = dist / time[point]
-            goal.angular = Vangular[point]
-        
-        #If the velocity is not viable for the vehicle
-        if (goal.linear > 15.0 or goal.linear < -15.0):
-            rospy.loginfo("Linear velocity is not viable for the puzzlebot")
-            goal.linear = 0.0
-        if (goal.angular > 3.2 or goal.angular < -3.2):
-            rospy.loginfo("Angular velocity is not viable for the puzzlebot")
-            goal.angular = 0.0
+            if isTime: #If the user introduce time instead of velocities
+                msg.linear[point] = dist / time[point]
+                msg.angular[point] = 0.5
+            
+	    #If the velocity is not viable for the vehicle
+            if (msg.linear[point] > 15.0 or msg.linear[point] < -15.0):
+                rospy.loginfo("Linear velocity is not viable for the puzzlebot")
+		msg.linear[point] = 0.0
+	    if (msg.angular[point] > 3.2 or msg.angular[point] < -3.2):
+		rospy.loginfo("Angular velocity is not viable for the puzzlebot")
+		msg.angular[point] = 0.0
 
-        position = points[point]
+            position = points[point]
+            point += 1
 	
 	#Publish the custom message
-        path_pub.publish(goal)
+        path_pub.publish(msg)
         rate.sleep()

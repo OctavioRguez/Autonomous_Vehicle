@@ -1,9 +1,8 @@
 #!/usr/bin/env python
 import rospy
 import numpy as np
-from std_msgs.msg import Float32, Bool
 from geometry_msgs.msg import Twist
-from closedloop_control.msg import path
+from openloop_control.msg import path
 
 class Controller:
     #Variables
@@ -12,88 +11,90 @@ class Controller:
         self.velocity.linear.x = 0.0 #Linear velocity in x (m/s)
         self.velocity.angular.z = 0.0 #Angular velocity in z (rad/s)
 
-        self.kpt = 1.0 #Translacional proporcional constant
-        self.kpr = 0.5 #Rotational proporcional constant
-
-        self.wr = 0.0 #Angular velocity from right wheel (rad/s)
-        self.wl = 0.0 #Angular velocity from left wheel (rad/s)
-        self.v_max = 0.3 #Linear velocity for the vehicle (m/s)
-        self.w_max = 0.5 #Angular velocity for the vehicle (rad/s)
+        self.v_max = 0.0 #Linear velocity for the vehicle (m/s)
+        self.w_max = 0.0 #Angular velocity for the vehicle (rad/s)
         self.init_time = 0.0 #Initial time (s)
         self.r = 0.05 #Radius of the wheels (m)
-        self.l = 0.19 #Distance between wheels (m)
+        self.l = 0.18 #Distance between wheels (m)
 
         self.dist = 0.0 #Distance (m)
-        self.angle = np.deg2rad(0) #Angle (rad)
+        self.angle = np.deg2rad(90) #Angle (rad)
+        self.dist_desired = 0.0 #For the distance between the current and desired point (m)
         self.angle_desired = 0.0 #For the angle between the current and desired point (rad)
+        self.dist_error = 0.0 #Error between dist_desired and dist
         self.angle_error = 0.0 #Error between angle_desired and angle
-    
-        self.xd, self.yd = 0.0, 0.0 #Coordinates desired
-        self.x, self.y = 0.0, 0.0 #Current coordinates
 
-        self.reset = None #Flag to reset init_time
+        self.point_number = 0 #For iterate along the points list
+        self.flag = None #Flag to reset init_time
         self.linear = False #Flag to move in a linear direction
+        self.next = True #Flag to move to the next point
         self.init = False #Flag to start controlling when getting the values from path generator
-        self.next = False #Flag to move to the next goal
+
+        #For getting the values from the path generator node
+        self.angles = []
+        self.distances = []
+        self.linearV = []
+        self.angularV = []
     
     #Function for callback
-    def path(self, msg):
-        self.xd, self.yd = msg.currGoal.x, msg.currGoal.y
-        self.v_max = msg.linear
-        self.w_max = msg.angular
+    def callback(self, msg):
+        self.angles = msg.angles
+        self.distances = msg.distances
+        self.linearV = msg.linear
+        self.angularV = msg.angular
         self.init = True #Flag to start the controller
-    
-    #Functions for getting the angular velocities from the wheels
-    def right(self, msg):
-        self.wr = msg.data
-    def left(self, msg):
-        self.wl = msg.data
 
     #To initialize time
     def initialize_time(self):
-        self.init_time = rospy.get_time() #Restart the variable
-        self.reset = False #Change flag
+        if (self.flag):
+            self.init_time = rospy.get_time() #Restart the variable
+            self.flag = False #Change flag
 
     #To precalculate variables
-    def calculations(self):
-        #Create variables for simplifying the calculations
-        self.x = self.x + self.r * ((self.wr + self.wl)/2) * dt * np.cos(self.angle)
-        self.y = self.y + self.r * ((self.wr + self.wl)/2) * dt * np.sin(self.angle)
-        self.angle = self.angle + self.r * ((self.wr - self.wl)/self.l) * dt #Angle during the time
-        
-        self.dist = np.sqrt((self.xd - self.x)**2 + (self.yd - self.y)**2) #Distance desired
-        self.angle_desired = np.arctan2((self.yd - self.y), (self.xd - self.x)) #Angle desired
-
-        self.next = False
+    def precalculations(self):
+        if (self.next and self.init):
+            #Create variables for simplifying the calculations
+            self.dist_desired = self.distances[self.point_number]
+            self.angle_desired = self.angles[self.point_number]
+            self.v_max = self.linearV[self.point_number]
+            self.w_max = self.angularV[self.point_number]
+            self.next = False #Change flag
 
     #Controlling the angular velocity
     def control_angular(self, dt):
-        self.angle_error = self.angle - self.angle_desired
-        if (self.angle_error > 0.05 or self.angle_error < -0.05): #If the angle error is not smaller enough
-            self.velocity.angular.z = -self.kpr * self.angle_error
+        theta = (self.velocity.angular.z * dt) / 2.0 #Angle during the time
+        self.angle_error = self.angle_desired - (self.angle + theta)
+
+        if (self.angle_error > 0.04): #If the angle is smaller than the angle desired
+            self.velocity.angular.z = self.w_max
+        elif (self.angle_error < -0.04): #If the angle is bigger than the angle desired
+            self.velocity.angular.z = -self.w_max
         else:
             #Reset variables
             self.angle = self.angle_desired
             self.velocity.angular.z = 0.0
 
             #Change flags
-            self.reset = True
+            self.flag = True
             self.linear = True
 
     def control_linear(self, dt): #Controlling the linear velocity
-        if (self.dist > 0.05): #If the error in distance is greater than 5 cm
-            self.velocity.linear.x = self.v_max * np.tanh(self.dist * self.kpt / self.v_max)
+        self.dist_error = self.dist_desired - self.dist
+        if (self.dist_error > 0.1): #If the error is greater than 2 cm
+            self.velocity.linear.x = self.v_max
         else:
             #Reset variables
             self.velocity.linear.x = 0.0
 
             #Change flags
-            self.reset = True
+            self.flag = True
             self.linear = False
-            self.init = False
+            self.next = True
 
             #Change to next point/coordinate
-            self.next = True
+            self.point_number += 1
+        
+        self.dist = self.velocity.linear.x * dt #Distance during the time
 
 #Stop Condition
 def stop():
@@ -105,31 +106,28 @@ if __name__=='__main__':
     rospy.init_node("Controller")
     rospy.on_shutdown(stop)
 
-    hz = 20 #Frequency (Hz)
+    hz = 100 #Frequency (Hz)
     rate = rospy.Rate(hz)
     controller = Controller() #Controller class object
 
     #Publishers and subscribers
-    in_velocity = rospy.Publisher("/cmd_vel", Twist, queue_size = 1)
-    in_next = rospy.Publisher("/nextGoal", Bool, queue_size = 1)
-    rospy.Subscriber("/goal", path, controller.path)
-    rospy.Subscriber("/wr", Float32, controller.right)
-    rospy.Subscriber("/wl", Float32, controller.left)
+    in_velocity = rospy.Publisher("/cmd_vel", Twist, queue_size=1)
+    rospy.Subscriber("/pose", path, controller.callback)
 
     print("The Control is Running")
 
     #Run the node
     while not rospy.is_shutdown():
         #Travel to the 4 points
-        if (controller.init):
-            if (controller.reset == None): #First iteration
-                controller.reset = True
-            elif (controller.reset):
+        if (controller.point_number < 4 and controller.init):
+            if (controller.flag == None): #First iteration
+                controller.flag = True
+            else:
                 controller.initialize_time()
 
-            if (not controller.reset): #If the flag is false
+            if (not controller.flag): #If the flag is false
                 dt = rospy.get_time() - controller.init_time
-                controller.calculations()
+                controller.precalculations()
 
                 #For controlling only one velocity per execution
                 if (controller.linear):
@@ -138,12 +136,7 @@ if __name__=='__main__':
                     controller.control_angular(dt)
         
         in_velocity.publish(controller.velocity) #Publish the velocities
-        in_next.publish(controller.next) #Publish the current status for the goal
-
         rospy.loginfo("Linear velocity: %f m/s", controller.velocity.linear.x)
         rospy.loginfo("Angular velocity: %f m/s", controller.velocity.angular.z)
-        #rospy.loginfo("Angle: %f rad", controller.angle)
-        #rospy.loginfo("Angle desired: %f m", controller.angle_desired)
-        #rospy.loginfo("Angle error: %f rad", controller.angle_error)
 
         rate.sleep()
