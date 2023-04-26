@@ -12,8 +12,8 @@ class Controller:
         self.velocity.linear.x = 0.0 #Linear velocity in x (m/s)
         self.velocity.angular.z = 0.0 #Angular velocity in z (rad/s)
 
-        self.kpt = 0.5 #Translacional proporcional constant
-        self.kpr = 0.5 #Rotational proporcional constant
+        self.kpt = 0.3 #Translacional proporcional constant
+        self.kpr = 1.0 #Rotational proporcional constant
         self.error = 0.05 #Admitible error for the angle and distance
 
         self.wr = 0.0 #Angular velocity from right wheel (rad/s)
@@ -28,13 +28,13 @@ class Controller:
         self.angle = np.deg2rad(0) #Angle (rad)
         self.angle_desired = 0.0 #For the angle between the current and desired point (rad)
         self.angle_error = 0.0 #Error between angle_desired and angle
-    
-        self.xd, self.yd = 0.0, 0.0 #Coordinates desired
+
         self.x, self.y = 0.0, 0.0 #Current coordinates
+        self.xd, self.yd = 0.0, 0.0 #Coordinates desired
 
         self.reset = None #Flag to get dt
-        self.linear = False #Flag to move in a linear direction
         self.init = False #Flag to start controlling when getting the values from path generator
+        self.linear = False #Flag to start moving in a linear trayectory
         self.next = False #Flag to move to the next goal
     
     #Function for getting the goal and velocities from path generator
@@ -56,22 +56,28 @@ class Controller:
         self.reset = True #Change flag
 
     #To precalculate variables
-    def calculations(self):
+    def calculations(self, dt):
         #Position during time
         self.x += (self.r * ((self.wr + self.wl)/2) * dt * np.cos(self.angle))
         self.y += (self.r * ((self.wr + self.wl)/2) * dt * np.sin(self.angle))
+        self.dist = np.sqrt((self.x - self.xd)**2 + (self.y - self.yd)**2) #Distance desired
 
         self.angle += (self.r * (self.wr - self.wl) / self.l) * dt #Angle during the time
-
-        self.dist = np.sqrt((self.x - self.xd)**2 + (self.y - self.yd)**2) #Distance desired
         self.angle_desired = np.arctan2((self.yd - self.y), (self.xd - self.x)) #Angle desired
+
+        self.angle_error = self.angle - self.angle_desired
+        #Keep the angle between pi and -pi
+        if (self.angle_error > np.pi):
+            self.angle_error -= 2*np.pi
+        elif (self.angle_error < -np.pi):
+            self.angle_error += 2*np.pi
 
         self.next = False #Change flag for keeping the current goal
 
     #Controlling the angular velocity
-    def control_angular(self, dt):
-        self.angle_error = self.angle - self.angle_desired
-        if (self.angle_error > self.error or self.angle_error < -self.error): #If the angle error is not within the range (-0.05, 0.05)
+    def control_angular(self):
+        #If the angle error is not within the range (-0.05, 0.05) units
+        if ((self.angle_error > self.error or self.angle_error < -self.error)):
             self.velocity.angular.z = -self.kpr * self.angle_error
 
             #Keep the angular velocity in boundaries according to w_max (-w_max, w_max)
@@ -81,22 +87,22 @@ class Controller:
                 self.velocity.angular.z = -self.w_max
         else:
             #Reset variables
-            self.angle = self.angle_desired
             self.velocity.angular.z = 0.0
 
-            #Change flags
-            self.linear = True
+            #Change flag
+            if (self.dist > self.error):
+                self.linear = True
 
-    def control_linear(self, dt): #Controlling the linear velocity
+    def control_linear(self): #Controlling the linear velocity
         if (self.dist > self.error): #If the error in the distance is greater than 5 cm
             self.velocity.linear.x = self.v_max * np.tanh(self.dist * self.kpt / self.v_max) #Sigmoid with v_max as a limit
         else:
             #Reset variables
             self.velocity.linear.x = 0.0
+            self.velocity.angular.z = 0.0
 
-            #Change flags
+            #Change flag
             self.linear = False
-            self.init = False
 
             #Change to next point/coordinate
             self.next = True
@@ -135,13 +141,19 @@ if __name__=='__main__':
                 controller.reset = False
 
             if (not controller.reset): #If the flag is false
-                controller.calculations()
+                controller.calculations(dt)
 
-                #For controlling only one velocity per execution
+                #Controlling the vehicle
                 if (controller.linear):
-                    controller.control_linear(dt)
+                    controller.control_linear() #Control the distance traveled by the vehicle
+
+                    #Adjust the angle during the travel
+                    if (controller.dist > 0.2):
+                        controller.control_angular()
+                    else:
+                        controller.velocity.angular.z = 0.0
                 else:
-                    controller.control_angular(dt)
+                    controller.control_angular() #Control the angle of the vehicle
         
         in_velocity.publish(controller.velocity) #Publish the velocities
         in_next.publish(controller.next) #Publish the current status for the goal
