@@ -1,13 +1,8 @@
 <?xml version="1.0" ?>
 <launch>
-
-    <rosparam file = "$(find final_puzzlebot)/config/params.yaml" command = "load" />
-
     <node name="Controller" pkg="final_puzzlebot" type="controller.py" output="screen" launch-prefix="gnome-terminal --command" />
-    <node name="Path-Generator" pkg="final_puzzlebot" type="path_generator.py" output="screen" launch-prefix="gnome-terminal --command" />
-    <node name="Color-Filtering" pkg="final_puzzlebot" type="colorFilter.py" output="screen" launch-prefix="gnome-terminal --command" />
+<-- <node name="Color-Filtering" pkg="final_puzzlebot" type="colorFilter.py" output="screen" launch-prefix="gnome-terminal --command" /> -->
     <node name="Line-Following" pkg="final_puzzlebot" type="lineFollowing.py" output="screen" launch-prefix="gnome-terminal --command" />
 
     <node name="rqt_image_view" pkg="rqt_image_view" type="rqt_image_view" output="screen" args=""/>
-
 </launch>
