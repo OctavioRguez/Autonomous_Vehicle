@@ -12,7 +12,7 @@ class Controller:
         self.__velocity.angular.z = 0.0 # Angular velocity in z (rad/s)
 
         self.__kpt = 1.0 # Translacional proporcional constant
-        self.__kpr = 0.5 # Rotational proporcional constant
+        self.__kpr = 0.1 # Rotational proporcional constant
 	self.__error = 0.0 # Error in the line following
         self.__errorTolerance = 0.05 # Admitible error for the angle and distance
 	self.__color = "None" # Color of lightraffic detected
