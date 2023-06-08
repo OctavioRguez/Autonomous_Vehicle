@@ -40,7 +40,7 @@ class LineFollowing:
 	    cx = int(moments['m10'] / moments['m00'])
 	    cy = int(moments['m01'] / moments['m00'])
 	    #cv2.circle(self.__cropImg, (cx, cy), 5, (255, 0, 0), -1)
-	    self.__error = (cx - self.__binaryImage.shape[1] / 2) + 5
+	    self.__error = (cx - self.__binaryImage.shape[1] / 2) + 4
 	
 	#self.prueba = self.__bridge.cv2_to_imgmsg(self.__binaryImage, encoding = 'rgb8')
 
