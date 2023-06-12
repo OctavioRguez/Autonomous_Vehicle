@@ -28,21 +28,20 @@ class LineFollowing:
 
     # Crop and binarize the image
     def __preProcessing(self):
-        cropImg = self.__img[180: , 200:1125]
+        cropImg = self.__img[600: , 280:1000]
         grayImage = cv2.cvtColor(cropImg, cv2.COLOR_BGR2GRAY)
-        self.__binaryImage = cv2.threshold(grayImage, 70, 255, cv2.THRESH_BINARY)[1]
+        self.__binaryImage = cv2.threshold(grayImage, 116, 255, cv2.THRESH_BINARY)[1]
 
     def _lineError(self):
         self.__preProcessing()
-
         moments = cv2.moments(self.__binaryImage)
         if (moments['m00'] > 0):
             cx = int(moments['m10'] / moments['m00'])
             #cy = int(moments['m01'] / moments['m00'])
-        #cv2.circle(self.__cropImg, (cx, cy), 5, (255, 0, 0), -1)
-        self.__error = (cx - self.__binaryImage.shape[1] / 2) + 5
+            #cv2.circle(self.__cropImg, (cx, cy), 5, (255, 0, 0), -1)
+            self.__error = (cx - float(self.__binaryImage.shape[1]) / 2.0) + 4
 
-        #self.prueba = self.__bridge.cv2_to_imgmsg(self.__binaryImage, encoding = 'rgb8')
+        #self.prueba = self.__bridge.cv2_to_imgmsg(self.__binaryImage, encoding = 'passthrough')
 
     def getError(self):
         return self.__error
@@ -57,7 +56,7 @@ if __name__=='__main__':
     rospy.init_node("Line_Following")
     rospy.on_shutdown(stop)
 
-    hz = 2 # Frequency (Hz)
+    hz = 60 # Frequency (Hz)
     rate = rospy.Rate(hz)
 
     follow = LineFollowing() # LineFollowing class object
@@ -66,7 +65,7 @@ if __name__=='__main__':
     rospy.Subscriber("/video_source/raw", Image, follow._retrieveImage) # Get the image from the camera
 
     #prueba_pub = rospy.Publisher("/prueba/raw", Image, queue_size = 2) # Prueba
-    error_pub = rospy.Publisher("/error", Float32, queue_size = 2) # Error
+    error_pub = rospy.Publisher("/error", Float32, queue_size = 60) # Error
 
     print("The Line Following is Running")
 
