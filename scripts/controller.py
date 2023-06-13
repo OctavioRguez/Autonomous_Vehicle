@@ -11,21 +11,21 @@ class Controller:
         self.__velocity.linear.x = 0.0 # Linear velocity in x (m/s)
         self.__velocity.angular.z = 0.0 # Angular velocity in z (rad/s)
 
-        self.__kpt = 1.0 # Translacional proporcional constant
-        self.__kpr = 1.0 # Rotational proporcional constant
+        self.__kpt = 0.05 # Translacional proporcional constant
+        self.__kpr = 2.0 # Rotational proporcional constant
         self.__error = 0.0 # Error in the line following
-        self.__errorTolerance = 0.05 # Admitible error for the angle and distance
-        self.__color = "None" # Color of lightraffic detected
+        self.__errorTolerance = 4.0 # Admitible error for the angle and distance
+        self.__obj = "None" # Object detected
         
         self.__vMax = 0.15 # Linear velocity for the vehicle (m/s)
-        self.__wMax = 0.2 # Angular velocity for the vehicle (rad/s)
+        self.__wMax = 0.5 # Angular velocity for the vehicle (rad/s)
 
         self._curve = False # Flag when the vehicle detects a curve
         self._init = False # Flag to start controlling when getting the values from path generator
 
     # Function for getting the color detected by the camera
-    def _colorCallback(self, msg):
-	    self.__color = msg.data
+    def _objectCallback(self, msg):
+	    self.__obj = msg.data
 
     def _errorCallback(self, msg):
         self.__error = msg.data
@@ -35,17 +35,13 @@ class Controller:
         self._curve = False
 
     def detectCurve(self):
-        if (self.__error > 60.0):
+        if (not self._curve):
+            self.__kpt = 0.05
+
+        if (self.__error > 40.0 or self.__error < -40.0):
             self._curve = True
-            self.__velocity.linear.x = 0.05
-            self.__velocity.angular.z = 0.4
-            """
-            if (self.__error < -60.0):
-                self.__velocity.angular.z = -0.5
-            else:
-                self.__velocity.angular.z = 0.5
-            """
-            rospy.Timer(rospy.Duration(8), self.__changeCurve)
+            self.__kpt = 0.025
+            rospy.Timer(rospy.Duration(10), self.__changeCurve)
         
     # Controlling the angular velocity
     def control_angular(self):
@@ -97,15 +93,15 @@ if __name__=='__main__':
     rospy.init_node("Controller")
     rospy.on_shutdown(stop)
 
-    hz = 60 # Frequency (Hz)
+    hz = 10 # Frequency (Hz)
     rate = rospy.Rate(hz)
 
     controller = Controller() # Controller class object
 
     # Publishers and subscribers
-    in_velocity = rospy.Publisher("/cmd_vel", Twist, queue_size = 60) # Publish the velocities for the vehicle
+    in_velocity = rospy.Publisher("/cmd_vel", Twist, queue_size = 1)# Publish the velocities for the vehicle
 
-    #rospy.Subscriber("/color", String, controller._colorCallback)
+    rospy.Subscriber("/object", String, controller._objectCallback)
     rospy.Subscriber("/error", Float32, controller._errorCallback)
 
     print("The Controller is Running")
@@ -115,9 +111,8 @@ if __name__=='__main__':
         # Start following the line
         if (controller._init):
             controller.detectCurve()
-            if (not controller._curve):
-                controller.control_linear()
-                controller.control_angular()
+            controller.control_linear()
+            controller.control_angular()
         else:
             controller.resetVelocities()
 		

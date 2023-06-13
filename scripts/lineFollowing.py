@@ -11,8 +11,8 @@ class LineFollowing:
     def __init__(self):
         self._flag = False # Flag to start once the first frame is received
         self.__bridge = cv_bridge.CvBridge() # Bridge to conversion between imgmsg and cv2
-
-	    #self.prueba = Image()
+        
+        #self.prueba = Image()
         self.__error = 0.0 # Save the error
 
     # Callback to receive the frames from camera
@@ -28,9 +28,9 @@ class LineFollowing:
 
     # Crop and binarize the image
     def __preProcessing(self):
-        cropImg = self.__img[600: , 280:1000]
+        cropImg = self.__img[600: , 360:920]
         grayImage = cv2.cvtColor(cropImg, cv2.COLOR_BGR2GRAY)
-        self.__binaryImage = cv2.threshold(grayImage, 116, 255, cv2.THRESH_BINARY)[1]
+        self.__binaryImage = cv2.threshold(grayImage, 110, 255, cv2.THRESH_BINARY)[1]
 
     def _lineError(self):
         self.__preProcessing()
@@ -56,7 +56,7 @@ if __name__=='__main__':
     rospy.init_node("Line_Following")
     rospy.on_shutdown(stop)
 
-    hz = 60 # Frequency (Hz)
+    hz = 10 # Frequency (Hz)
     rate = rospy.Rate(hz)
 
     follow = LineFollowing() # LineFollowing class object
@@ -64,8 +64,8 @@ if __name__=='__main__':
     # Publishers and subscribers
     rospy.Subscriber("/video_source/raw", Image, follow._retrieveImage) # Get the image from the camera
 
-    #prueba_pub = rospy.Publisher("/prueba/raw", Image, queue_size = 2) # Prueba
-    error_pub = rospy.Publisher("/error", Float32, queue_size = 60) # Error
+    #prueba_pub = rospy.Publisher("/prueba/raw", Image, queue_size = 1) # Prueba
+    error_pub = rospy.Publisher("/error", Float32, queue_size = 1) # Error
 
     print("The Line Following is Running")
 
