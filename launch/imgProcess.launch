@@ -1,8 +1,8 @@
 <?xml version="1.0" ?>
 <launch>
-
+    <!-- ROS Nodes -->
     <node name="Line_Following" pkg="opencv_control" type="lineFollowing.py" output="screen" launch-prefix="gnome-terminal --command" />
 
+    <!-- Camera Image View -->
     <node name="rqt_image_view" pkg="rqt_image_view" type="rqt_image_view" output="screen" args=""/>
-
 </launch>

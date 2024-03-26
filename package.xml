@@ -1,19 +1,20 @@
 <?xml version="1.0"?>
 <package format="2">
-  <name>opencv_control</name>
-  <version>0.0.0</version>
-  <description>The opencv_control package</description>
+  <name>autonomous_vehicle</name>
+  <version>1.0.0</version>
+  <description>This Autonomous Vehicle package is a ROS-based software package designed for line following with computer vision. 
+  It includes modules for color filter for streetlights recognition, and line following control.</description>
 
   <!-- One maintainer tag required, multiple allowed, one person per tag -->
   <!-- Example:  -->
   <!-- <maintainer email="jane.doe@example.com">Jane Doe</maintainer> -->
-  <maintainer email="octavio@todo.todo">octavio</maintainer>
+  <maintainer email="octaviomacias16@hotmail.com">octavio</maintainer>
 
 
   <!-- One license tag required, multiple allowed, one license per tag -->
   <!-- Commonly used license strings: -->
   <!--   BSD, MIT, Boost Software License, GPLv2, GPLv3, LGPLv2.1, LGPLv3 -->
-  <license>TODO</license>
+  <license>BSD3</license>
 
 
   <!-- Url tags are optional, but multiple are allowed, one per tag -->
