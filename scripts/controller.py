@@ -23,9 +23,8 @@ class Controller:
         self._curve = False # Flag when the vehicle detects a curve
         self._init = False # Flag to start controlling when getting the values from path generator
 
-    # Function for getting the color detected by the camera
     def _objectCallback(self, msg):
-	    self.__obj = msg.data
+        self.__obj = msg.data
 
     def _errorCallback(self, msg):
         self.__error = msg.data
@@ -77,7 +76,7 @@ class Controller:
 
     # Access needed for class attributes
     def getVelocity(self):
-	    return self.__velocity
+        return self.__velocity
 
     def resetVelocities(self):
         self.__velocity.linear.x = 0.0

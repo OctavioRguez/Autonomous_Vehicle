@@ -17,7 +17,6 @@ class Classificator:
         self.__bridge = cv_bridge.CvBridge() # Bridge to conversion between imgmsg and cv2
 
         self.__class_list = ["Construction", "Giveway", "Green", "Left", "Red", "Right", "Stop", "Straight", "Yellow"]
-        #self.__class_list = ["forward", "giveway", "greenlight", "left", "redlight", "right", "round", "stop", "working", "yellowlight"]
         self.__colors = [(255, 0, 0), (0, 0, 125), (0, 255, 0), (255, 125, 125),(0, 0, 255), (255, 200, 200), (238, 174, 245), (0, 0, 200),(0, 0, 125), (245, 227, 66)]
 
         self._flag = False
@@ -101,7 +100,7 @@ class Classificator:
         return result
     
     def startDetection(self):
-        self.__net = self.__build_model(1) #Define si opencv se corre con CUDA o con CPU 0 = CPU, 1 = CUDA 
+        self.__net = self.__build_model(1) # Define OpenCV run mode (CUDA = 1 or CPU = 0)
         inputImage = self.__format_yolov5(self.__img)
         outs = self.__detect(inputImage, self.__net)
         class_ids, confidences, boxes = self.__wrap_detection(inputImage, outs[0])
@@ -144,6 +143,6 @@ if __name__=='__main__':
         if (classificator._flag):
             classificator.startDetection()
             object_pub.publish(classificator.getObject())
-	        prueba_pub.publish(classificator.prueba)
+            prueba_pub.publish(classificator.prueba)
 
         rate.sleep()

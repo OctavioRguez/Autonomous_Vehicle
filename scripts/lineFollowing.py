@@ -12,7 +12,6 @@ class LineFollowing:
         self._flag = False # Flag to start once the first frame is received
         self.__bridge = cv_bridge.CvBridge() # Bridge to conversion between imgmsg and cv2
         
-        #self.prueba = Image()
         self.__error = 0.0 # Save the error
 
     # Callback to receive the frames from camera
@@ -37,11 +36,7 @@ class LineFollowing:
         moments = cv2.moments(self.__binaryImage)
         if (moments['m00'] > 0):
             cx = int(moments['m10'] / moments['m00'])
-            #cy = int(moments['m01'] / moments['m00'])
-            #cv2.circle(self.__cropImg, (cx, cy), 5, (255, 0, 0), -1)
             self.__error = (cx - float(self.__binaryImage.shape[1]) / 2.0) + 4
-
-        #self.prueba = self.__bridge.cv2_to_imgmsg(self.__binaryImage, encoding = 'passthrough')
 
     def getError(self):
         return self.__error
@@ -71,11 +66,8 @@ if __name__=='__main__':
 
     # Run the node
     while not rospy.is_shutdown():
-        # Code
         if (follow._flag):
             follow._lineError()
 
-     	#prueba_pub.publish(follow.prueba)
         error_pub.publish(follow.getError())
-
         rate.sleep()
