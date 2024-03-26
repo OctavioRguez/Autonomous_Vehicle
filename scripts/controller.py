@@ -37,7 +37,7 @@ class Controller:
         self._linear = False # Flag to start moving in a linear trayectory
         self._next = False # Flag to move to the next goal
 
-	self.__alpha = 0.1
+        self.__alpha = 0.1
     
     # Function for getting the goal and velocities from path generator
     def _pathCallback(self, msg):
@@ -68,7 +68,7 @@ class Controller:
         self.__angle += (self.__r * (self.__wr - self.__wl) / self.__l) * dt # Angle during the time
         self.__angle_desired = np.arctan2((self.__yd - self.__y), (self.__xd - self.__x)) # Angle desired
 
-	rospy.loginfo("Angle: %f rad", self.__angle)
+        rospy.loginfo("Angle: %f rad", self.__angle)
 
         self.__angle_error = self.__angle - self.__angle_desired
         # Keep the angle between pi and -pi
@@ -110,13 +110,13 @@ class Controller:
 
     # Access needed for class attributes
     def getInitTime(self):
-	return self.__init_time
+        return self.__init_time
 
     def getDistance(self):
-	return self.__dist
+        return self.__dist
 
     def getVelocity(self):
-	return self.__velocity
+        return self.__velocity
 
 # Stop Condition
 def stop():
@@ -161,12 +161,12 @@ if __name__=='__main__':
                     controller.control_linear() # Control the distance traveled by the vehicle
 
                     # Adjust the angle during the travel
-		    """
+                    """
                     if (controller.getDistance() > 0.2):
                         controller.control_angular()
                     else:
                         controller.getVelocity().angular.z = 0.0
-		    """
+                    """
                 else:
                     controller.control_angular() # Control the angle of the vehicle
         
