@@ -1,9 +1,9 @@
 <?xml version="1.0" ?>
 <launch>
-
+    <!-- Parameters file -->
     <rosparam file = "$(find openloop_control)/config/params.yaml" command = "load" />
 
+    <!-- ROS Nodes -->
     <node name="Controller" pkg="openloop_control" type="controller.py" output="screen" launch-prefix="gnome-terminal --command" />
     <node name="PathGenerator" pkg="openloop_control" type="path_generator.py" output="screen" launch-prefix="gnome-terminal --command" />
-
 </launch>
