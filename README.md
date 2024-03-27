@@ -35,4 +35,4 @@ For running the project, you can use the following command:
 ```
 
 ## License
-This project is licensed under the BSD 3-Clause License. See the LICENSE file for details.
+This project is licensed under the BSD 3-Clause License. See the [LICENSE](LICENSE) file for details.
