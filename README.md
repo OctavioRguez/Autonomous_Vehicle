@@ -20,9 +20,9 @@ Additionally the following ROS messages are used:
 ```bash
 cd ~/catkin_ws/src
 git clone https://github.com/OctavioRguez/Autonomous_Vehicle.git
-git branch Openloop
-cd ..
+git checkout Openloop
 mv ./Autonomous_Vehicle ./autonomous_vehicle
+cd ..
 catkin_make
 ```
 
