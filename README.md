@@ -36,5 +36,8 @@ For running the project, you can use the following command:
     roslaunch autonomous_vehicle puzzlebot.launch
 ```
 
+## Demo (Movement)
+https://github.com/OctavioRguez/Autonomous_Vehicle/assets/115122414/46348ad6-ec19-423b-9210-b0aa3a9e23d4
+
 ## License
-This project is licensed under the BSD 3-Clause License. See the LICENSE file for details.
+This project is licensed under the BSD 3-Clause License. See the [LICENSE](LICENSE) file for details.
