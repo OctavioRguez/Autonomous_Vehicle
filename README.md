@@ -22,9 +22,9 @@ Additionally the following ROS messages are used:
 ```bash
 cd ~/catkin_ws/src
 git clone https://github.com/OctavioRguez/Autonomous_Vehicle.git
-git branch VisionControl
-cd ..
+git checkout VisionControl
 mv ./Autonomous_Vehicle ./autonomous_vehicle
+cd ..
 catkin_make
 ```
 
